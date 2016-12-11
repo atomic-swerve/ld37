@@ -1,0 +1,62 @@
+*, body {
+    margin: 0 auto;
+    overflow: hidden;
+}
+
+#score {
+    position:absolute;
+    left:25vh;
+    top:50vh;
+}
+
+#game-window {
+    position: relative;
+}
+
+#background {
+    position:absolute;
+    border: 2vw black solid;
+}
+
+#player {
+    color: forestgreen;
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    background: white;
+    border: 1.5vw black solid;
+    font-weight: bold;
+}
+
+@media all and (orientation:portrait) {
+    #game-window {
+        height: 100vw;
+        width: 100vw;
+    }
+    #player {
+        height: 1.5vw;
+        width: 1.5vw;
+    }
+    #background {
+        height: 96vw;
+        width: 96vw;
+        border-width: 2vw;
+    }
+}
+
+@media all and (orientation:landscape) {
+    #game-window {
+        height: 100vh;
+        width: 100vh;
+    }
+    #player {
+        height: 1.5vh;
+        width: 1.5vh;
+        border-width: 1.5vh;
+    }
+    #background {
+        height: 96vh;
+        width: 96vh;
+        border-width: 2vh;
+    }
+}
