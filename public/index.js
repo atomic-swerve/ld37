@@ -14,116 +14,75 @@ var coordSuffix = "vw";
 var playerVelocity = {};
 playerVelocity.x = 0;
 playerVelocity.y = 0;
+
 var startVelocity = 60;
-var maxVelocity = 120;
 
-var playerRotationVelocity = 0;
+var swerveDecay = 250;
+var currSwerveDecay = 250;
 
-var playerNormals = {};
-playerNormals.x = Math.random() * 2 - 1;
-playerNormals.y = 1 - Math.abs(playerNormals.x);
+var playerRotationVelocity = 10;
 
 var playerStunned = true;
 
-var playerSSRadius = 3;
-
 var combo = 0;
-var comboSafe = false;
 
 var gameWon = false;
 
-function jumpInput(e) {
+
+// On any key, mouse, touch
+function playerInputStart(e) {
     if (playerStunned) {
-        console.log('Start!');
-        playerJump();
-        return;
-    }
-    if (playerSSDetection()) {
-        console.log('SS!');
-        playerSS();
+        playerStart();
+        document.removeEventListener('keydown',playerInputStart);
+        document.removeEventListener('mousedown',playerInputStart);
+        document.removeEventListener('touchstart',playerInputStart);
+        document.addEventListener('keydown',playerInputSwerve);
+        document.addEventListener('mousedown',playerInputSwerve);
+        document.addEventListener('touchstart',playerInputSwerve);
     }
 }
-document.addEventListener('keydown',jumpInput);
-document.addEventListener('mousedown',jumpInput);
-document.addEventListener('touchstart',jumpInput);
+document.addEventListener('keydown',playerInputStart);
+document.addEventListener('mousedown',playerInputStart);
+document.addEventListener('touchstart',playerInputStart);
 
-function playerJump() {
+// Starts movement
+function playerStart() {
     playerStunned = false;
-    playerVelocity.x = playerNormals.x * startVelocity;
-    playerVelocity.y = playerNormals.y * startVelocity;
-    playerRotationVelocity = playerVelocity.x;
+    playerVelocity.y = startVelocity;
 }
 
-function comboSafeStart() {
-    comboSafe = true;
-}
-function comboSafeEnd() {
-    comboSafe = false;
-}
-
-function playerSS() {
-    playerVelocity.x *= 1.1;
-    playerVelocity.y *= 1.1;
-
-    if (Math.abs(playerVelocity.x) > maxVelocity) {
-        playerVelocity.x = maxVelocity * Math.sign(playerVelocity.x);
+// Swerve
+function playerInputSwerve() {
+    if (currSwerveDecay <= 0) {
+        currSwerveDecay = swerveDecay;
+        combo += 1;
     }
-    if (Math.abs(playerVelocity.y) > maxVelocity) {
-        playerVelocity.y = maxVelocity * Math.sign(playerVelocity.y);
-    }
-
-    if (playerNormals[0]) {
-        playerVelocity.x *= -1;
-    }
-    if (playerNormals[1]) {
-        playerVelocity.y *= -1;
-    }
-
-    combo += 1;
-
-    comboSafeStart();
-    setTimeout(function() {comboSafeEnd();},200);
 }
 
+// Called every frame to move player
 function playerMovement() {
+    if (currSwerveDecay > 0) {
+        playerVelocity.x +=  playerVelocity.y * playerRotationVelocity * (currSwerveDecay / swerveDecay) * deltaFrame / 1000;
+        playerVelocity.y += -playerVelocity.x * playerRotationVelocity * (currSwerveDecay / swerveDecay) * deltaFrame / 1000;
+        currSwerveDecay -= deltaFrame;
+    }
     playerPos.x = playerPos.x + (playerVelocity.x * deltaFrame / 1000);
     playerPos.y = playerPos.y + (playerVelocity.y * deltaFrame / 1000);
 }
 
+// Bounces player off edges
 function playerEdgeDetection() {
-    if ((playerPos.x < 0 && playerVelocity.x < 0) || (playerPos.x > 96.5 && playerVelocity.x > 0)) {
-        if (playerPos.x < 0) {playerPos.x = 0;} else {playerPos.x = 96.5;}
+    if ((playerPos.x < 1) || (playerPos.x > 94.5)) {
+        if (playerPos.x < 1) {playerPos.x = 1;} else {playerPos.x = 94.5;}
         playerVelocity.x = playerVelocity.x * -1;
     }
-    if ((playerPos.y < 0 && playerVelocity.y < 0) || (playerPos.y > 96.5 && playerVelocity.y > 0)) {
-        if (playerPos.y < 0) {playerPos.y = 0;} else {playerPos.y = 96.5;}
+    if ((playerPos.y < 1) || (playerPos.y > 94.5)) {
+        if (playerPos.y < 1) {playerPos.y = 1;} else {playerPos.y = 94.5;}
         playerVelocity.y = playerVelocity.y * -1;
     }
 }
 
-function playerSSDetection() {
-    playerNormals.x = 0;
-    playerNormals.y = 0;
-
-    if ((playerPos.x <= playerSSRadius && playerVelocity.x < 0)) {
-        playerNormals.x = 1;
-    }
-    if ((playerPos.x >= (96.5 - playerSSRadius) && playerVelocity.x > 0)) {
-        playerNormals.x = -1;
-    }
-    if ((playerPos.y <= playerSSRadius && playerVelocity.y < 0)) {
-        playerNormals.y = 1;
-    }
-    if ((playerPos.y >= (96.5 - playerSSRadius) && playerVelocity.y > 0)) {
-        playerNormals.y = -1;
-    }
-    if (playerNormals.x != 0 || playerNormals.y != 0) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
+// Recalculate width/height based on portrait/landscape
 function calcWindow() {
     if (window.innerHeight > window.innerWidth) {
         coordSuffix = "vw";
@@ -134,7 +93,7 @@ function calcWindow() {
 }
 window.addEventListener('resize', calcWindow);
 
-
+// Init and Render use Performance.now() for deltaTime from requestAnimationFrame
 function init(timestamp) {
     lastFrame = timestamp;
     calcWindow();
