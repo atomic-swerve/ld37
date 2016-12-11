@@ -21,8 +21,17 @@
 #player {
     color: forestgreen;
     position: absolute;
-    left: 0;
-    bottom: 0;
+    left: -100%;
+    bottom: -100%;
+    background: white;
+    border: 1.5vw black solid;
+    font-weight: bold;
+}
+#shadow {
+    color: forestgreen;
+    position: absolute;
+    left: -100%;
+    bottom: -100%;
     background: white;
     border: 1.5vw black solid;
     font-weight: bold;
@@ -34,6 +43,10 @@
         width: 100vw;
     }
     #player {
+        height: 1.5vw;
+        width: 1.5vw;
+    }
+    #shadow {
         height: 1.5vw;
         width: 1.5vw;
     }
@@ -50,6 +63,11 @@
         width: 100vh;
     }
     #player {
+        height: 1.5vh;
+        width: 1.5vh;
+        border-width: 1.5vh;
+    }
+    #shadow {
         height: 1.5vh;
         width: 1.5vh;
         border-width: 1.5vh;
