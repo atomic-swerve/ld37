@@ -7,31 +7,57 @@ var score_elem = document.getElementById("score");
 var deltaFrame = 0;
 var lastFrame = Date.now();
 
+var boop = new Audio('music/boop.mp3');
+boop.volume = .4;
+var introVoice = new Audio('music/introvoice.mp3');
+introVoice.volume = .4;
+
 var player = {pos : {}, velocity: {}};
 player.pos.x = 48;
 player.pos.y = 48;
 player.velocity.x = 0;
 player.velocity.y = 0;
+player.rotation = 0;
+player.rotVelocity = 0;
 player.swerveDecay = 0;
+player.swerveVelocity = 1;
 player.bounces = 0;
 player.bounce = function(normal) {
     player.bounces += 1;
+    player.rotVelocity *= -1;
     if (player.bounces < 8) {
-        //play sound
+        //play boop
+        boop.play();
         return;
     }
     if (player.bounces == 8) {
         setTimeout(function () {
-            //play voice
+            //text show "bored now"
+            //play voice "bored now"
+            introVoice.play();
             //set timeout
-            //play voice
+            setTimeout(swerveStart,2000);
+            //text show "do something New!"
+            //play voice "do something New!"
             //unlock swerve
-            swerveStart();
+            //set timeout
+            //hide text
         }, 2000);
     }
+    else {
+        //play next sound
+    }
 };
+player.borderColor = 'black';
+player.collisionRange = 1;
+player.collisions = 0;
 player.collision = function() {
-
+    player.collisions += 1;
+    if (player.collisions == 1) {
+        //start music
+        //start edge sound queue
+        //set timeout
+    }
 };
 
 var shadow = {pos : {}, velocity: {}};
@@ -42,13 +68,17 @@ shadow.velocity.y = 0;
 shadow.opacity = 0;
 
 var up = {pos : {}, velocity: {}};
-up.pos.x = 48;
+up.pos.x = 68;
 up.pos.y = 48;
 up.velocity.x = 0;
-up.velocity.y = 0;
+up.velocity.y = -60;
+up.rotation = 0;
+up.rotVelocity = 0;
 up.swerveDecay = 0;
+up.swerveVelocity = -1;
 up.bounces = 0;
 up.bounce = function(normal) {
+    up.rotVelocity *= -1;
     up.bounces += 1;
     switch(normal) {
         case 1:
@@ -69,6 +99,15 @@ up.bounce = function(normal) {
             break;
     }
 };
+up.borderColor = 'black';
+up.borderSequence = ['black','green','indigo','orange','purple','yellow','blue','red'];
+up.borderIndex = 0;
+up.collision = function() {
+    up.swerveDecay = swerveDecay;
+    player.borderColor = up.borderColor;
+    up.borderIndex = (up.borderIndex + 1) % 8;
+    up.borderColor = up.borderSequence[up.borderIndex];
+};
 
 var coordSuffix = "vw";
 
@@ -76,11 +115,8 @@ var startVelocity = 60;
 
 var swerveDecay = 500;
 
-var swerveVelocity = 1;
-
-var combo = 0;
-
 var gameStarted = false;
+var collisionTimeout = 500;
 var gameWon = false;
 
 
@@ -106,17 +142,16 @@ function swerveStart() {
     document.addEventListener('touchstart',playerSwerve);
 }
 
-// Swerve
 function playerSwerve() {
     if (player.swerveDecay <= 0) {
-        shadowTrail();
+        player.rotVelocity = 100;
         player.swerveDecay = swerveDecay;
-        combo += 1;
-        document.removeEventListener('keydown',playerSwerve);
-        document.removeEventListener('mousedown',playerSwerve);
-        document.removeEventListener('touchstart',playerSwerve);
+        shadowTrail();
+        document.removeEventListener('keydown', playerSwerve);
+        document.removeEventListener('mousedown', playerSwerve);
+        document.removeEventListener('touchstart', playerSwerve);
 
-        setTimeout(playerReleaseSwerve,2000);
+        setTimeout(playerReleaseSwerve, 1000);
     }
 }
 
@@ -126,7 +161,6 @@ function shadowTrail() {
     shadow.velocity.x = player.velocity.x;
     shadow.velocity.y = player.velocity.y;
     shadow.opacity = .5;
-
 }
 
 function playerReleaseSwerve() {
@@ -138,31 +172,40 @@ function playerReleaseSwerve() {
 // Called every frame to move player
 function entityMovement(e) {
     if (e.swerveDecay > 0) {
-        e.velocity.x += e.velocity.y * swerveVelocity * (e.swerveDecay / swerveDecay) * deltaFrame / 1000;
-        e.velocity.y -= e.velocity.x * swerveVelocity * (e.swerveDecay / swerveDecay) * deltaFrame / 1000;
+        e.velocity.x += e.velocity.y * e.swerveVelocity * (e.swerveDecay / swerveDecay) * deltaFrame / 1000;
+        e.velocity.y -= e.velocity.x * e.swerveVelocity * (e.swerveDecay / swerveDecay) * deltaFrame / 1000;
         e.swerveDecay -= deltaFrame;
     }
     e.pos.x = e.pos.x + (e.velocity.x * deltaFrame / 1000);
     e.pos.y = e.pos.y + (e.velocity.y * deltaFrame / 1000);
+
+    e.rotation = e.rotation + (e.rotVelocity * deltaFrame / 1000);
 }
 
 // Bounces player off edges
 function entityEdgeDetection(e) {
     if ((e.pos.x < 1) || (e.pos.x > 94.5)) {
         if (e.pos.x < 1) {e.pos.x = 1;} else {e.pos.x = 94.5;}
-        e.velocity.x = e.velocity.x * -1;
+        e.velocity.x *= -1;
         e.bounce();
     }
     if ((e.pos.y < 1) || (e.pos.y > 94.5)) {
         if (e.pos.y < 1) {e.pos.y = 1;} else {e.pos.y = 94.5;}
-        e.velocity.y = e.velocity.y * -1;
+        e.velocity.y *= -1;
         e.bounce();
     }
 }
 
 // 1up detection
 function collisionDetection() {
-
+    if (collisionTimeout > 0) {
+        collisionTimeout -= deltaFrame;
+        return;
+    }
+    if (Math.sqrt((player.pos.x - up.pos.x)^2 + (player.pos.y - up.pos.y)^2) < player.collisionRange) {
+        player.collision();
+        up.collision();
+    }
 }
 
 // Recalculate width/height based on portrait/landscape
@@ -180,6 +223,7 @@ window.addEventListener('resize', calcWindow);
 function init(timestamp) {
     lastFrame = timestamp;
     calcWindow();
+    collisionDetection();
     window.requestAnimationFrame(render);
 }
 
@@ -194,6 +238,8 @@ function render(timestamp) {
         entityEdgeDetection(up);
         entityMovement(up);
 
+        collisionDetection();
+
         if (shadow.opacity > 0) {
             entityMovement(shadow);
         }
@@ -202,6 +248,9 @@ function render(timestamp) {
     //player.style.borderColor = playerSSTrue ? "red" : "black";
     player_elem.style.left = player.pos.x.toString() + coordSuffix;
     player_elem.style.bottom = player.pos.y.toString() + coordSuffix;
+    player_elem.style.transform = "rotate(" + player.rotation.toString() +"deg)";
+    player_elem.style.webkitTransform = "rotate(" + player.rotation.toString() +"deg)";
+    player_elem.style.borderColor = player.borderColor;
 
     if (shadow.opacity > 0) {
         shadow_elem.style.left = shadow.pos.x.toString() + coordSuffix;
@@ -212,8 +261,9 @@ function render(timestamp) {
 
     up_elem.style.left = up.pos.x.toString() + coordSuffix;
     up_elem.style.bottom = up.pos.y.toString() + coordSuffix;
+    up_elem.style.borderColor = up_elem.borderColor;
 
-    score_elem.innerHTML = deltaFrame;
+    score_elem.innerHTML = "score: " + player.collisions;
     window.requestAnimationFrame(render);
 }
 window.requestAnimationFrame(init);
