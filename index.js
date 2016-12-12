@@ -2,7 +2,6 @@ var player_elem = document.getElementById("player");
 var shadow_elem = document.getElementById("shadow");
 var background_elem = document.getElementById("background");
 var up_elem = document.getElementById("up");
-var score_elem = document.getElementById("score");
 
 var deltaFrame = 0;
 var lastFrame = Date.now();
@@ -11,6 +10,10 @@ var boop = new Audio('music/boop.mp3');
 boop.volume = .4;
 var introVoice = new Audio('music/introvoice.mp3');
 introVoice.volume = .4;
+
+function playNextSound() {
+
+}
 
 var player = {pos : {}, velocity: {}};
 player.pos.x = 48;
@@ -44,12 +47,13 @@ player.bounce = function(normal) {
             //hide text
         }, 2000);
     }
-    else {
+    if (player.bounces > 16) {
         //play next sound
+        boop.play();
     }
 };
 player.borderColor = 'black';
-player.collisionRange = 1;
+player.collisionRange = 3;
 player.collisions = 0;
 player.collision = function() {
     player.collisions += 1;
@@ -80,33 +84,19 @@ up.bounces = 0;
 up.bounce = function(normal) {
     up.rotVelocity *= -1;
     up.bounces += 1;
-    switch(normal) {
-        case 1:
-            //left side
-            background_elem.style.borderLeftColor = up_elem.style.borderLeftColor;
-            break;
-        case 2:
-            //right side
-            background_elem.style.borderRightColor = up_elem.style.borderRightColor;
-            break;
-        case 3:
-            //top side
-            background_elem.style.borderTopColor = up_elem.style.borderTopColor;
-            break;
-        case 4:
-            //bottom side
-            background_elem.style.borderBottomColor = up_elem.style.borderBottomColor;
-            break;
-    }
 };
 up.borderColor = 'black';
-up.borderSequence = ['black','green','indigo','orange','purple','yellow','blue','red'];
+up.borderSequence = ['green','indigo','orange','purple','yellow','blue','red'];
 up.borderIndex = 0;
 up.collision = function() {
+    collisionTimeout = 500;
     up.swerveDecay = swerveDecay;
-    player.borderColor = up.borderColor;
-    up.borderIndex = (up.borderIndex + 1) % 8;
+    up.borderIndex = (up.borderIndex + 1) % 7;
     up.borderColor = up.borderSequence[up.borderIndex];
+    document.body.style.backgroundColor = up.borderColor;
+    background_elem.style.color = up.borderSequence[(up.borderIndex + 1) % 7]
+    background_elem.style.borderColor = background_elem.style.color;
+    background_elem.textContent = player.collisions;
 };
 
 var coordSuffix = "vw";
@@ -202,7 +192,9 @@ function collisionDetection() {
         collisionTimeout -= deltaFrame;
         return;
     }
-    if (Math.sqrt((player.pos.x - up.pos.x)^2 + (player.pos.y - up.pos.y)^2) < player.collisionRange) {
+    if (Math.abs(player.pos.x - up.pos.x) < player.collisionRange && Math.abs(player.pos.y - up.pos.y) < player.collisionRange) {
+        console.log(Math.abs(player.pos.x - up.pos.x));
+        console.log(Math.abs(player.pos.y - up.pos.y));
         player.collision();
         up.collision();
     }
@@ -263,7 +255,6 @@ function render(timestamp) {
     up_elem.style.bottom = up.pos.y.toString() + coordSuffix;
     up_elem.style.borderColor = up_elem.borderColor;
 
-    score_elem.innerHTML = "score: " + player.collisions;
     window.requestAnimationFrame(render);
 }
 window.requestAnimationFrame(init);
